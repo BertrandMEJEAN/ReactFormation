@@ -1,5 +1,5 @@
 import React,{ Component } from 'react';
-import { MOCK } from '../mock';
+import axios from 'axios';
 import RecipeDetails from "../Component/RecipeDetails";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
@@ -8,13 +8,18 @@ import { Container, Row, Button } from 'reactstrap';
 class RecipeList extends Component {
 
     state = {
-        recipes: MOCK/*'10.0.1.68:8080/api/v1/recipes'*/,
+        recipes: null,
         addMode: false    
       }
+
+    componentDidMount() {
+      this.getAllRecipe();
+    }
     
     delete = (recipe) => () => {
-        let newRecipes = this.state.recipes.filter(item => recipe.id !== item.id);
-        this.setState({recipes: newRecipes})
+        axios.delete('http://10.0.1.212:8080/api/v1/recipes/'+recipe.id).then(res => {
+          this.getAllRecipe()
+        })
     };
     
     addMode = () => {
@@ -22,12 +27,28 @@ class RecipeList extends Component {
     };
     
     addRecipe = (recipe) => {
-        let oldRecipes = this.state.recipes;
-        oldRecipes.push(recipe)
-        this.setState({
-            recipes: oldRecipes,
-            addMode: false
-        });
+        axios.post('http://10.0.1.212:8080/api/v1/recipes', recipe)
+          .then(
+            this.addMode(),
+            this.getAllRecipe()
+          )
+    }
+
+    update = (recipe) => {
+      axios.patch('http://10.0.1.212:8080/api/v1/recipes', recipe).then(res => {
+        this.getAllRecipe();
+      })
+    }
+
+    getAllRecipe() {
+      axios.get('http://10.0.1.212:8080/api/v1/recipes')
+        .then(result => {
+              let tab = result.data;
+              this.setState({recipes: tab})
+
+        }).catch(error => {
+          console.log(error);
+        })
     }
 
     render(){
@@ -36,8 +57,8 @@ class RecipeList extends Component {
         <Container>
           <Row>
             {
-              this.state.recipes.map(recipe => {
-                return <RecipeDetails key = {recipe.id} recipe={recipe} onDelete={this.delete}/>
+              this.state.recipes && this.state.recipes.map(recipe => {
+                return <RecipeDetails key = {recipe.id} recipes={recipe} upRecipe={this.update} onDelete={this.delete}/>
               })
             }
           </Row>
